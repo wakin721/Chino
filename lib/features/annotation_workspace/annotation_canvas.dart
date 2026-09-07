@@ -73,7 +73,14 @@ class _AnnotationCanvasState extends State<AnnotationCanvas> {
         final imageRect = Rect.fromLTWH(transform.offset.dx, transform.offset.dy, widget.image.width * transform.scale, widget.image.height * transform.scale);
         final draft = _draftBox();
         return ClipRect(child: Stack(children: [
-          Positioned.fromRect(rect: imageRect, child: Image.file(File(widget.image.path), fit: BoxFit.fill, errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12, child: Center(child: Icon(Icons.broken_image_outlined))))),
+          Positioned.fromRect(
+            rect: imageRect,
+            child: Image.file(
+              File(widget.image.path),
+              fit: BoxFit.fill,
+              errorBuilder: (context, error, stackTrace) => const ColoredBox(color: Colors.black12, child: Center(child: Icon(Icons.broken_image_outlined))),
+            ),
+          ),
           Positioned.fill(child: CustomPaint(painter: _AnnotationPainter(annotations: widget.annotations, categoryNames: widget.categoryNames, selectedId: widget.selectedId, transform: transform, draft: draft, editingId: _editingId))),
           Positioned.fill(child: GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -91,12 +98,19 @@ class _AnnotationCanvasState extends State<AnnotationCanvas> {
                 }
               });
             },
-            onPanUpdate: (details) { if (_start != null) setState(() => _current = transform.toImage(details.localPosition)); },
+            onPanUpdate: (details) {
+              if (_start != null) {
+                setState(() => _current = transform.toImage(details.localPosition));
+              }
+            },
             onPanEnd: (_) {
               final draftBox = _draftBox(); final id = _editingId;
               if (draftBox != null) {
-                if (id != null) widget.onUpdate(id, draftBox);
-                else if (draftBox.width * transform.scale >= 4 && draftBox.height * transform.scale >= 4) widget.onCreate(draftBox);
+                if (id != null) {
+                  widget.onUpdate(id, draftBox);
+                } else if (draftBox.width * transform.scale >= 4 && draftBox.height * transform.scale >= 4) {
+                  widget.onCreate(draftBox);
+                }
               }
               setState(() { _start = null; _current = null; _editingId = null; _originalBox = null; _resizing = false; });
             },
