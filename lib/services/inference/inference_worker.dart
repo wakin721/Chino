@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'inference_protocol.dart';
 
@@ -21,7 +22,17 @@ class InferenceWorker {
   Stream<String> get diagnostics => _diagnostics.stream;
 
   static Future<InferenceWorker> start(String executable, List<String> args, {String? workingDirectory}) async {
-    final process = await Process.start(executable, args, runInShell: false, workingDirectory: workingDirectory);
+    var resolvedExecutable = executable;
+    var resolvedWorkingDirectory = workingDirectory;
+    if (Platform.isWindows) {
+      final bundledDirectory = p.join(p.dirname(Platform.resolvedExecutable), 'inference_runtime');
+      final bundledPython = p.join(bundledDirectory, 'python.exe');
+      if (await File(bundledPython).exists()) {
+        resolvedExecutable = bundledPython;
+        resolvedWorkingDirectory = bundledDirectory;
+      }
+    }
+    final process = await Process.start(resolvedExecutable, args, runInShell: false, workingDirectory: resolvedWorkingDirectory);
     return InferenceWorker._(process);
   }
 
@@ -56,7 +67,8 @@ class InferenceWorker {
   }
 
   void _failAll(Object error, StackTrace stack) {
-    final pending = _pending.values.toList(); _pending.clear();
+    final pending = _pending.values.toList();
+    _pending.clear();
     for (final completer in pending) { if (!completer.isCompleted) completer.completeError(error, stack); }
   }
 
@@ -65,7 +77,9 @@ class InferenceWorker {
     try { await request({'action': 'shutdown'}).timeout(const Duration(seconds: 2)); } catch (_) { _process.kill(); }
     _closed = true;
     await _process.stdin.close();
-    await _stdoutSubscription?.cancel(); await _stderrSubscription?.cancel(); await _diagnostics.close();
+    await _stdoutSubscription?.cancel();
+    await _stderrSubscription?.cancel();
+    await _diagnostics.close();
     _failAll(const InferenceException('cancelled', 'Inference worker was disposed.'), StackTrace.current);
   }
 }

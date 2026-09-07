@@ -1,8 +1,10 @@
 name: CI
+
 on:
   push:
     branches: [main, 'feat/**']
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +24,6 @@ jobs:
 
   python-test:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('inference_runtime/pyproject.toml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,3 +31,38 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install pytest
       - run: python -m pytest inference_runtime/tests -q
+
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter create --platforms=windows --project-name chino .
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build windows --release
+
+  package-inference-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.10'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter create --platforms=windows --project-name chino .
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - shell: powershell
+        run: ./tools/package_inference_runtime.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chino-windows
+          path: build/windows/x64/runner/Release/
