@@ -225,7 +225,7 @@ class _AnnotationWorkspaceScreenState extends State<AnnotationWorkspaceScreen> {
                         Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(children: [
-                            Expanded(child: DropdownButtonFormField<String>(value: selected.categoryId, decoration: const InputDecoration(labelText: 'Class'), items: [for (final c in _project.categories) DropdownMenuItem(value: c.id, child: Text(c.name))], onChanged: (value) { if (value != null) _reassign(value); })),
+                            Expanded(child: DropdownButtonFormField<String>(initialValue: selected.categoryId, decoration: const InputDecoration(labelText: 'Class'), items: [for (final c in _project.categories) DropdownMenuItem(value: c.id, child: Text(c.name))], onChanged: (value) { if (value != null) _reassign(value); })),
                             IconButton(onPressed: _deleteSelected, tooltip: 'Delete box', icon: const Icon(Icons.delete_outline)),
                           ]),
                         ),
