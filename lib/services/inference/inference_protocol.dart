@@ -26,8 +26,9 @@ class InferenceDetection {
 }
 
 class InferenceResponse {
-  const InferenceResponse({required this.requestId, this.action, this.detections = const []});
+  const InferenceResponse({required this.requestId, required this.raw, this.action, this.detections = const []});
   final String requestId;
+  final Map<String, Object?> raw;
   final String? action;
   final List<InferenceDetection> detections;
 }
@@ -44,7 +45,7 @@ InferenceResponse decodeInferenceResponse(Map<String, Object?> json) {
   final detections = rawDetections.map((raw) {
     final d = Map<String, Object?>.from(raw as Map);
     return InferenceDetection(
-      classId: d['class_id'] as int,
+      classId: (d['class_id'] as num).toInt(),
       className: d['class_name'] as String,
       confidence: (d['confidence'] as num).toDouble(),
       x1: (d['x1'] as num).toDouble(),
@@ -53,5 +54,5 @@ InferenceResponse decodeInferenceResponse(Map<String, Object?> json) {
       y2: (d['y2'] as num).toDouble(),
     );
   }).toList(growable: false);
-  return InferenceResponse(requestId: requestId, action: json['action'] as String?, detections: detections);
+  return InferenceResponse(requestId: requestId, raw: Map.unmodifiable(json), action: json['action'] as String?, detections: detections);
 }
