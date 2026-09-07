@@ -13,7 +13,7 @@ YoloLabelRow parseYoloLabelRow(String line) {
   if (parts.length != 5) throw const FormatException('YOLO detection row must contain 5 fields');
   final classId = int.tryParse(parts[0]);
   final values = parts.skip(1).map(double.tryParse).toList();
-  if (classId == null || classId < 0 || values.any((v) => v == null || !v!.isFinite)) {
+  if (classId == null || classId < 0 || values.any((v) => v == null || !v.isFinite)) {
     throw const FormatException('YOLO detection row contains invalid numeric values');
   }
   final v = values.cast<double>();
