@@ -20,8 +20,8 @@ class InferenceWorker {
 
   Stream<String> get diagnostics => _diagnostics.stream;
 
-  static Future<InferenceWorker> start(String executable, List<String> args) async {
-    final process = await Process.start(executable, args, runInShell: false);
+  static Future<InferenceWorker> start(String executable, List<String> args, {String? workingDirectory}) async {
+    final process = await Process.start(executable, args, runInShell: false, workingDirectory: workingDirectory);
     return InferenceWorker._(process);
   }
 
@@ -43,11 +43,7 @@ class InferenceWorker {
       if (requestId == null) throw const FormatException('Worker response has no request_id.');
       final completer = _pending.remove(requestId);
       if (completer == null) return;
-      try {
-        completer.complete(decodeInferenceResponse(map));
-      } catch (error, stack) {
-        completer.completeError(error, stack);
-      }
+      try { completer.complete(decodeInferenceResponse(map)); } catch (error, stack) { completer.completeError(error, stack); }
     } catch (error, stack) {
       _failAll(InferenceException('invalid_worker_output', '$error'), stack);
     }
@@ -60,25 +56,16 @@ class InferenceWorker {
   }
 
   void _failAll(Object error, StackTrace stack) {
-    final pending = _pending.values.toList();
-    _pending.clear();
-    for (final completer in pending) {
-      if (!completer.isCompleted) completer.completeError(error, stack);
-    }
+    final pending = _pending.values.toList(); _pending.clear();
+    for (final completer in pending) { if (!completer.isCompleted) completer.completeError(error, stack); }
   }
 
   Future<void> dispose() async {
     if (_closed) return;
-    try {
-      await request({'action': 'shutdown'}).timeout(const Duration(seconds: 2));
-    } catch (_) {
-      _process.kill();
-    }
+    try { await request({'action': 'shutdown'}).timeout(const Duration(seconds: 2)); } catch (_) { _process.kill(); }
     _closed = true;
     await _process.stdin.close();
-    await _stdoutSubscription?.cancel();
-    await _stderrSubscription?.cancel();
-    await _diagnostics.close();
+    await _stdoutSubscription?.cancel(); await _stderrSubscription?.cancel(); await _diagnostics.close();
     _failAll(const InferenceException('cancelled', 'Inference worker was disposed.'), StackTrace.current);
   }
 }
