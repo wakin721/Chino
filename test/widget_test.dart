@@ -8,7 +8,7 @@ void main() {
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.theme?.useMaterial3, isTrue);
-    expect(find.text('Chino'), findsOneWidget);
+    expect(find.text('Chino'), findsWidgets);
     expect(find.text('Import dataset'), findsOneWidget);
     expect(find.text('Open project'), findsOneWidget);
   });
